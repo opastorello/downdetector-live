@@ -1,0 +1,82 @@
+services:
+  # Exporter Prometheus — dados do Downdetector via API oficial
+  exporter:
+    build: .
+    command: python3 exporter/downdetector_exporter.py
+    environment:
+      DD_API_KEY: ${DD_API_KEY}
+      DD_METRICS_ISO: ${DD_ISO:-BR}
+      DD_WATCH: ${DD_WATCH:-}
+      DD_TTL: ${DD_TTL:-120}
+      DD_PORT: 9693
+    ports: ["9693:9693"]
+    restart: unless-stopped
+
+  # API REST (compare entre países, outages globais) — tudo via API oficial
+  api:
+    build: .
+    command: python3 server/server.py
+    environment:
+      DD_API_KEY: ${DD_API_KEY}
+      DD_PORT: 8000
+      DD_TTL: ${DD_TTL:-120}
+    ports: ["8000:8000"]
+    restart: unless-stopped
+
+  # Notificador de incidentes no Google Chat e/ou Slack
+  notifier:
+    build: .
+    command: python3 alerts/notifier.py
+    environment:
+      DD_API_KEY: ${DD_API_KEY}
+      DD_WEBHOOK: ${DD_WEBHOOK:-}
+      DD_SLACK: ${DD_SLACK:-}
+      DD_ISO: ${DD_ISO:-BR}
+      DD_WATCH: ${DD_WATCH:-}
+      DD_INTERVAL: ${DD_INTERVAL:-120}
+      DD_TRIGGER: ${DD_TRIGGER:-danger}
+      DD_RATIO: ${DD_RATIO:-0}
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports: ["9090:9090"]
+    restart: unless-stopped
+    depends_on: [exporter, alertmanager]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    environment:
+      SLACK_WEBHOOK_URL: ${DD_SLACK:-}
+      GCHAT_WEBHOOK_URL: ${DD_WEBHOOK:-}
+    ports: ["9093:9093"]
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports: ["3000:3000"]
+    restart: unless-stopped
+    depends_on: [prometheus]
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:

@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Downdetector API — DTOs reais (Speedtest iOS v7.1.2)",
+  "description": "Nomes de campo = @SerialName extraídos dos $serializer no binário. [C] confirmado.",
+  "definitions": {
+    "SiteDTO": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "stats_24": {
+          "description": "Série de reports das últimas 24h (Kotlin: chartStats)",
+          "type": "object"
+        },
+        "name": { "type": "string" },
+        "status": { "$ref": "#/definitions/Status" },
+        "baseline": { "type": "number" },
+        "indicators": {
+          "description": "Kotlin: reportIndicators",
+          "type": "array",
+          "items": { "$ref": "#/definitions/IndicatorDTO" }
+        },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "logos": { "type": "array", "items": { "type": "string", "format": "uri" } }
+      },
+      "required": ["id", "name", "status", "slug"]
+    },
+    "IndicatorDTO": {
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "count": { "type": "integer" },
+        "indicator": { "type": "string" },
+        "percentage": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "ReportIndicatorDTO": {
+      "type": "object",
+      "properties": {
+        "children": { "type": "array", "items": { "$ref": "#/definitions/ReportIndicatorDTO" } },
+        "parent_id": { "type": "string" },
+        "translations": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "DdHeatmapClusterDTO": {
+      "type": "object",
+      "properties": {
+        "count": { "type": "integer" },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lng": { "type": "number", "minimum": -180, "maximum": 180 }
+      },
+      "required": ["count", "lat", "lng"]
+    },
+    "SitePageIdsDTO": {
+      "type": "object",
+      "properties": {
+        "pages": { "description": "Kotlin: pageIds", "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Status": {
+      "type": "string",
+      "enum": ["success", "warning", "danger"],
+      "description": "UI: success=azul/ok, warning=amarelo, danger=vermelho"
+    },
+    "ConsumerDowndetectorConfig": {
+      "type": "object",
+      "properties": {
+        "accessToken": { "type": "string" },
+        "countryInfo": { "$ref": "#/definitions/ConsumerDowndetectorConfigCountryInfo" }
+      }
+    },
+    "ConsumerDowndetectorConfigCountryInfo": {
+      "type": "object",
+      "properties": {
+        "siteID": { "type": "string" },
+        "iso2": { "type": "string", "minLength": 2, "maxLength": 2 },
+        "name": { "type": "string" },
+        "countryID": { "type": "string" }
+      }
+    },
+    "UserIdentifiers": {
+      "type": "object",
+      "properties": {
+        "device": { "$ref": "#/definitions/UserIdentifiersDevice" },
+        "app": { "$ref": "#/definitions/UserIdentifiersApp" }
+      }
+    },
+    "UserIdentifiersApp": {
+      "type": "object",
+      "properties": { "version": { "type": "string" } }
+    },
+    "UserIdentifiersDevice": {
+      "type": "object",
+      "description": "Modelo KMP compartilhado. No iOS: id, platform, model, version, idfa, idfaEnabled, idfv. Campos android*/telephony* ficam nulos.",
+      "properties": {
+        "id": { "type": "string" },
+        "platform": { "type": "string" },
+        "model": { "type": "string" },
+        "androidApi": { "type": ["string", "null"] },
+        "fingerprint": { "type": ["string", "null"] },
+        "brand": { "type": ["string", "null"] },
+        "product": { "type": ["string", "null"] },
+        "hardware": { "type": ["string", "null"] },
+        "buildId": { "type": ["string", "null"] },
+        "manufacturer": { "type": ["string", "null"] },
+        "isRooted": { "type": ["boolean", "null"] },
+        "radio": { "type": ["string", "null"] },
+        "guid": { "type": "string" },
+        "androidId": { "type": ["string", "null"] },
+        "telephonyDeviceId": { "type": ["string", "null"] },
+        "telephonyImei": { "type": ["string", "null"] },
+        "telephonyMeid": { "type": ["string", "null"] },
+        "telephonyPhoneType": { "type": ["string", "null"] },
+        "version": { "type": "string" },
+        "idfa": { "type": ["string", "null"] },
+        "idfaEnabled": { "type": ["boolean", "null"] },
+        "idfv": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

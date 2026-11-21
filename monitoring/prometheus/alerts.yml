@@ -1,0 +1,24 @@
+groups:
+  - name: downdetector
+    rules:
+      - alert: ServicoEmOutage
+        expr: downdetector_status >= 2
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "Outage em {{ $labels.company }} ({{ $labels.country }})"
+          description: "{{ $labels.slug }} em danger há 5min · {{ $value }}"
+
+      - alert: ReportsAcimaDoNormal
+        expr: downdetector_ratio_vs_baseline > 3 and downdetector_reports_current > 20
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.company }} com reports {{ $value }}x acima do baseline"
+
+      - alert: ExporterSemColetar
+        expr: downdetector_up == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "Exporter do Downdetector sem coletar dados"

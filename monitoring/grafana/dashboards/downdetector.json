@@ -1,0 +1,109 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "tags": ["downdetector"],
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Downdetector",
+  "uid": "downdetector-main",
+  "version": 1,
+  "refresh": "1m",
+  "templating": {
+    "list": [
+      {
+        "name": "country",
+        "label": "País",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "query": "label_values(downdetector_status, country)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {"text": "All", "value": "$__all"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat", "title": "Serviços em outage (danger)",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "red"}, "unit": "short"}},
+      "targets": [{"expr": "count(downdetector_status{country=~\"$country\"} >= 2) or vector(0)", "refId": "A"}]
+    },
+    {
+      "type": "stat", "title": "Serviços instáveis (warning)",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "orange"}, "unit": "short"}},
+      "targets": [{"expr": "count(downdetector_status{country=~\"$country\"} == 1) or vector(0)", "refId": "A"}]
+    },
+    {
+      "type": "stat", "title": "Reports agora (total)",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "blue"}, "unit": "short"}},
+      "targets": [{"expr": "sum(downdetector_reports_current{country=~\"$country\"})", "refId": "A"}]
+    },
+    {
+      "type": "stat", "title": "Coleta ativa",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": [
+        {"type": "value", "options": {"0": {"text": "OFF", "color": "red"}, "1": {"text": "OK", "color": "green"}}}]}},
+      "targets": [{"expr": "max(downdetector_up)", "refId": "A"}]
+    },
+    {
+      "type": "timeseries", "title": "Top serviços — reports agora",
+      "gridPos": {"h": 9, "w": 16, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 10, "showPoints": "never"}, "unit": "short"}},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["last", "max"]}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"expr": "topk(15, downdetector_reports_current{country=~\"$country\"})", "legendFormat": "{{company}} ({{country}})", "refId": "A"}]
+    },
+    {
+      "type": "piechart", "title": "Distribuição de status",
+      "gridPos": {"h": 9, "w": 8, "x": 16, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "pieType": "donut"},
+      "targets": [
+        {"expr": "count(downdetector_status{country=~\"$country\"} == 0) or vector(0)", "legendFormat": "OK", "refId": "A"},
+        {"expr": "count(downdetector_status{country=~\"$country\"} == 1) or vector(0)", "legendFormat": "Warning", "refId": "B"},
+        {"expr": "count(downdetector_status{country=~\"$country\"} >= 2) or vector(0)", "legendFormat": "Danger", "refId": "C"}
+      ]
+    },
+    {
+      "type": "table", "title": "Serviços — status atual",
+      "gridPos": {"h": 11, "w": 24, "x": 0, "y": 13},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "options": {"sortBy": [{"displayName": "Reports agora", "desc": true}]},
+      "fieldConfig": {"defaults": {}, "overrides": [
+        {"matcher": {"id": "byName", "options": "Status"}, "properties": [
+          {"id": "mappings", "value": [{"type": "value", "options": {
+            "0": {"text": "OK", "color": "green"}, "1": {"text": "Warning", "color": "orange"}, "2": {"text": "Danger", "color": "red"}}}]},
+          {"id": "custom.cellOptions", "value": {"type": "color-background"}}]}
+      ]},
+      "targets": [
+        {"expr": "downdetector_reports_current{country=~\"$country\"}", "format": "table", "instant": true, "refId": "A"},
+        {"expr": "downdetector_baseline_current{country=~\"$country\"}", "format": "table", "instant": true, "refId": "B"},
+        {"expr": "downdetector_status{country=~\"$country\"}", "format": "table", "instant": true, "refId": "C"},
+        {"expr": "downdetector_ratio_vs_baseline{country=~\"$country\"}", "format": "table", "instant": true, "refId": "D"}
+      ],
+      "transformations": [
+        {"id": "merge", "options": {}},
+        {"id": "organize", "options": {
+          "excludeByName": {"Time": true, "__name__": true, "instance": true, "job": true, "slug": true},
+          "renameByName": {
+            "company": "Serviço", "country": "País", "status": "Status",
+            "Value #A": "Reports agora", "Value #B": "Baseline",
+            "Value #C": "Status", "Value #D": "x Baseline"}}}
+      ]
+    }
+  ],
+  "__inputs": [],
+  "__requires": []
+}
